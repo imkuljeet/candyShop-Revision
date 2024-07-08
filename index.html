@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Shop Seller Dashboard</title>
+</head>
+<body>
+<form onsubmit="sendToBackend(event)">
+    
+    <label for="candyName">Candy Name : </label>
+    <input type="text" id="candyName" name="candyName" required>
+
+    <label for="description">Description : </label>
+    <input type="text" id="description" name="description" required>
+
+    <label for="price">Price : </label>
+    <input type="number" id="price" name="price" required>
+
+    <label for="quantity">Quantity : </label>
+    <input type="number" id="quantity" name="quantity" min="0" max="100" required>
+    <button type="submit">Add Item</button>
+
+</form>
+
+<h2>All Products </h2>
+<ul id="choco"></ul>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+
+<script>
+    window.addEventListener("DOMContentLoaded",async ()=>{
+        try{
+        let ul = document.getElementById("choco");
+
+        let res = await axios.get('https://crudcrud.com/api/a8586d37caad49868b68f7ccb8c318dc/candyShop');
+
+        let arr = res.data;//array of objects
+        
+        arr.forEach(obj => {
+            showOnScreen(obj);
+        });
+
+        }catch(err){
+            console.log(err);
+        }
+    })
+
+    async function sendToBackend(e){
+        try{
+        e.preventDefault();
+
+        let candyName = e.target.candyName.value;
+        let description = e.target.description.value;
+        let price = e.target.price.value;
+        let quantity = e.target.quantity.value;
+
+        let details = {
+            candy_name : candyName,
+            descriptions : description,
+            prices : price,
+            quantities : quantity
+        }
+
+        let res = await axios.post('https://crudcrud.com/api/a8586d37caad49868b68f7ccb8c318dc/candyShop',details);
+
+        let itemDetail = res.data;
+
+        showOnScreen(itemDetail);//Object detail 
+
+    }catch(err){
+        console.log(err);
+    }
+
+    }
+
+    document.getElementById("choco").addEventListener("click", async (event) => {
+    if (event.target.classList.contains("buy")) {
+      let button = event.target;
+      let quantity = parseInt(button.getAttribute("data-quantity"));
+      let li = button.closest("li");
+      let quantityElem = li.querySelector("#quantity");
+      let newQuantity = parseInt(quantityElem.innerText) - quantity;
+
+      if (newQuantity >= 0) {
+        let objId = li.getAttribute("data-id"); // Get the ID from the list item
+        let candyName = li.getAttribute("data-candy_name");
+        let descriptions = li.getAttribute("data-descriptions");
+        let prices = li.getAttribute("data-prices");
+
+        try {
+          // Update the quantity on the backend
+          await axios.put(`https://crudcrud.com/api/a8586d37caad49868b68f7ccb8c318dc/candyShop/${objId}`, {
+            candy_name: candyName,
+            descriptions: descriptions,
+            prices: prices,
+            quantities: newQuantity
+          });
+
+          // Update the quantity on the screen
+          quantityElem.innerText = newQuantity;
+        } catch (error) {
+          console.error("Error updating the quantity on the backend:", error);
+        }
+      } else {
+        alert("Not enough quantity available");
+      }
+    }
+  });
+
+  async function showOnScreen(obj) {
+    try {
+      let ul = document.getElementById("choco");
+      let li = document.createElement("li");
+
+      // Set data attributes to store the object properties
+      li.setAttribute("data-id", obj._id);
+      li.setAttribute("data-candy_name", obj.candy_name);
+      li.setAttribute("data-descriptions", obj.descriptions);
+      li.setAttribute("data-prices", obj.prices);
+
+      //-------------------------------------------------------------------------------------------
+      console.log("li is>>>",li);//<li data-id="668b4b3c19f3e403e81e4e29" data-candy_name="Eclairs" data-descriptions="Chocolate" data-prices="700">Eclairs --- Chocolate --- 700 --- 
+                      // <span id="quantity">7</span>
+                      // <button class="buy" data-quantity="1">Buy 1</button>
+                      // <button class="buy" data-quantity="2">Buy 2</button>
+                      // <button class="buy" data-quantity="3">Buy 3</button></li>
+
+      //--------------------------------------------------------------------------------------------
+
+      // Create the HTML content for the list item
+      li.innerHTML = `${obj.candy_name} --- ${obj.descriptions} --- ${obj.prices} --- 
+                      <span id="quantity">${obj.quantities}</span>
+                      <button class="buy" data-quantity="1">Buy 1</button>
+                      <button class="buy" data-quantity="2">Buy 2</button>
+                      <button class="buy" data-quantity="3">Buy 3</button>`;
+
+      ul.appendChild(li);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+</script>
+</body>
+</html>
